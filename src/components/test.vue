@@ -58,6 +58,7 @@
 				},
 				set(v) {
 					this.url = v;
+					this.$store.dispatch('getVideo', v);
 					this.$store.dispatch('getComments', v);
 				},
 			},
