@@ -5,8 +5,7 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
   state: {
-    apiKey: 'AIzaSyCxsZ8BZSASJAtVMps-2zETlPMnf_Esomw',
-    video: null,
+    apiKey: '',
     nextPageToken: '',
     comments: []
   },
