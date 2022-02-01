@@ -2,10 +2,11 @@
 	<div
 		class="wrapper px-5"
 		:class="{
-			center: !api || api.length < 39 || WRONG_API,
+			center: !api || api.length < 39 || WRONG_API_KEY,
 		}"
+		:style="badApiCounter === 3 ? badapi : ''"
 	>
-		<template v-if="!api || api.length < 39 || WRONG_API">
+		<template v-if="!api || api.length < 39 || WRONG_API_KEY">
 			<v-text-field
 				v-model="api"
 				outlined
@@ -20,15 +21,14 @@
 				<slot append> ggg </slot>
 			</v-text-field>
 			<span
-				v-if="WRONG_API && api && api.length === 39"
+				v-if="WRONG_API_KEY && api && api.length === 39 && !LIMIT_EXCEEDED"
 				class="error errorMSG pa-2"
 			>
-				Ошибка! <strong> GF6404 </strong>
-				Кто то не умеет коипровать и вставлять верный код! =)
+				{{ wrongAPIMsg }}
 			</span>
 		</template>
 		<v-stepper
-			v-if="WRONG_API === false"
+			v-if="WRONG_API_KEY === false"
 			v-model="e1"
 			vertical
 			transition="scale-transition"
@@ -94,15 +94,34 @@
 			return {
 				e1: 1,
 				api: null,
+				badApiCounter: 0,
+				wrongAPIMsg:
+					'Ошибка!!! Код ошибки = GF6404. Кто то не умеет коипровать и вставлять верный код! =)',
+				img: require('../assets/badapi.png'),
 			};
 		},
 		computed: {
-			...mapGetters(['WRONG_API', 'API']),
+			...mapGetters(['WRONG_API_KEY', 'API', 'LIMIT_EXCEEDED']),
+			badapi() {
+				return `background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),url(${this.img});background-size: cover;background-repeat: no-repeat;background-position: 0 50%;`;
+			},
 		},
 		watch: {
+			WRONG_API_KEY(v) {
+				if (v) {
+					this.badApiCounter++;
+				}
+			},
 			api(v) {
 				if (v && v.length === 39) {
-					this.$store.dispatch('putAPI', v);
+					this.$store.dispatch('TEST_API_KEY_ACTION', v);
+				} else {
+					this.$store.dispatch('CLEAN_BAD_API_FLAG_ACTION');
+				}
+			},
+			LIMIT_EXCEEDED(v) {
+				if (v) {
+					this.$router.push('/error');
 				}
 			},
 		},

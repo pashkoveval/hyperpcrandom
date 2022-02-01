@@ -6,118 +6,180 @@ Vue.use(Vuex)
 export default new Vuex.Store({
   state: {
     apiKey: '',
-    wrongAPI: null,
+    wrongAPIKey: null,
     video: null,
+    limitExceededFlag: false,
+    limitExceededMsg: 'Ошибка GF6404!!!',
+    hyperPCID: 'UCRS-7r-HT7VXZF2ZDVogueg',
     testURL: 'KbyclDTvzU8',
-    nextPageToken: '',
-    comments: []
+    comments: [],
+    subscribers: [],
   },
   mutations: {
-    wrongAPIInput(state, v) {
-      state.wrongAPI = v
+    // Проверка сохраненного ключа с прошлой сессии
+    CHECK_API_LOCKAL(state) {
+      const apiStorage = localStorage.getItem('api');
+      const pastDate = localStorage.getItem('date');
+      const nowDate = Date.now();
+      const pastTime = nowDate - pastDate;
+
+      if (pastTime >= 86400000) {
+        state.wrongAPIKey = true;
+        localStorage.removeItem('api');
+        localStorage.removeItem('date');
+      } else {
+        if (apiStorage) {
+          state.apiKey = apiStorage;
+          state.wrongAPIKey = null;
+        }
+      }
     },
-    putAPI(state, v) {
+    // Сохранения ключа API
+    PUT_API(state, v) {
       state.apiKey = v
     },
-    newNextPageToken(state, v) {
-      state.nextPageToken = v
+    // Сохранения проверенного введенного ключа API в локальное хранилище
+    SAVE_CHECKED_API(state) {
+      localStorage.setItem('api', state.apiKey);
+      localStorage.setItem('date', Date.now());
     },
-    getVideo(state, v) {
+    // Очистка флага неверно введенного API ключа
+    CLEAN_BAD_API_FLAG(state) {
+      state.wrongAPIKey = null
+    },
+    // Сохранение видео по переданной ссылке
+    GET_VIDEO(state, v) {
       state.video = v
     },
-    clearVideo(state) {
+    // Удаление сохраненного видео
+    DELETE_VIDEO(state) {
       state.video = null
     },
-    pushComments(state, v) {
+    // Валидация серверных ошибок
+    SERVER_ERROR_VALIDATEON(state, msg) {
+      switch (msg.errors[0].reason) {
+        case "quotaExceeded":
+          state.limitExceededFlag = true
+          state.limitExceededMsg = 'Ошибка GF6404!!!  Лимит запросов на сегодня исчерпан.'
+          break;
+        case "badRequest":
+          state.wrongAPIKey = true
+          break;
+        default:
+          break;
+      }
+    },
+    // Сохранение и очистка коментариев 
+    PUSH_COMENTS(state, v) {
       if (v) {
         state.comments = [...state.comments, ...v]
-      } else {
-        state.comments = []
       }
-    }
+    },
+    // Сохранение подписчиков 
+    FIND_SUBSCRIBERS_ON_CHENEL(state, v) {
+      state.subscribers = [...state.subscribers, v]
+    },
   },
   actions: {
-    putAPI({ commit, dispatch }, v) {
-      commit('putAPI', v)
-      dispatch('testAPI', 'KbyclDTvzU8')
+    // Вызов проверки сохраненного ключа с прошлой сессии
+    CHECK_API_LOCKAL_ACTION({ commit }) {
+      commit('CHECK_API_LOCKAL')
     },
-    clearVideo({ commit }) {
-      commit('clearVideo')
+    // Вызов очистки флага неверно введенного API ключа
+    CLEAN_BAD_API_FLAG_ACTION({ commit }) {
+      commit('CLEAN_BAD_API_FLAG')
     },
-    findSubscriptions({ dispatch, state }) {
-      const allUsersID = [];
-      state.comments.forEach(el => {
-        allUsersID.push(el.snippet.topLevelComment.snippet.authorChannelId.value)
-      })
-      allUsersID.forEach(el => {
-        dispatch('findSubscriptionsOnCanel', el)
-      })
-
+    // Проверка переданого ключа API если все хорошо вызов сохранения в локальном хранилище
+    async TEST_API_KEY_ACTION({ commit }, api, url = 'KbyclDTvzU8') {
+      await fetch(`https://youtube.googleapis.com/youtube/v3/videos?part=snippet&key=${api}&id=${url}`)
+        .then(res => res.json())
+        .then(json => {
+          commit('SAVE_CHECKED_API')
+          if (json.error) {
+            commit('SERVER_ERROR_VALIDATEON', json.error)
+          } else {
+            commit('PUT_API', api)
+            commit('SAVE_CHECKED_API')
+          }
+        })
+        .catch(e => {
+          throw e
+        })
     },
-    async findSubscriptionsOnCanel({ state, dispatch }, id, nextPage = '') {
+    // Вызов удаления видео
+    DELETE_VIDEO_ACTION({ commit }) {
+      commit('DELETE_VIDEO')
+    },
+    // СОхранение ID всех коментаторов
+    GET_COMMENTATORS_ID({ state }) {
+      const allSubscrubersIds = [];
+      const comments = state.comments;
+      if (comments.length) {
+        comments.forEach(el => {
+          allSubscrubersIds.push(el.snippet.topLevelComment.snippet.authorChannelId.value)
+        })
+      }
+      // if (allSubscrubersIds.length) {
+      //   allSubscrubersIds.forEach(el => {
+      //     dispatch('CHECK_SUBSCRIPTION', el)
+      //   })
+      // }
+    },
+    // Проверка подписки коментатора
+    async CHECK_SUBSCRIPTION({ state, commit, dispatch }, id, nextPage = '') {
       const apiKey = state.apiKey;
       const currentId = id;
       await fetch(`https://youtube.googleapis.com/youtube/v3/subscriptions?part=snippet%2CcontentDetails&maxResults=100&channelId=${currentId}&key=${apiKey}&pageToken=${nextPage}`)
-        .then(res => {
-          if (res.ok) {
-            return res.json()
-          }
-        })
+        .then(res => res.json())
         .then(json => {
-          if (json.nextPageToken) {
-            dispatch('findSubscriptionsOnCanel', currentId, json.nextPageToken)
-            console.log('json', json.nextPageToken);
+          if (json.error) {
+            commit('SERVER_ERROR_VALIDATEON', json.error)
           }
-          console.log('json', json);
+          commit('FIND_SUBSCRIBERS_ON_CHENEL', json)
+          if (json.nextPageToken) {
+            dispatch('CHECK_SUBSCRIPTION', currentId, json.nextPageToken)
+          }
         })
         .catch(e => {
           throw e
         })
     },
-    async testAPI({ commit, state }, videoURL) {
+    // Получение видео
+    async GET_VIDEO_ACTION({ commit, state }, videoURL) {
       const apiKey = state.apiKey;
       const url = videoURL
       await fetch(`https://youtube.googleapis.com/youtube/v3/videos?part=snippet&key=${apiKey}&id=${url}`)
         .then(res => res.json())
         .then(json => {
-          if (json.items) {
-            commit('wrongAPIInput', false)
+          if (json.error) {
+            commit('SERVER_ERROR_VALIDATEON', json.error)
+            return
           } else {
-            commit('wrongAPIInput', true)
+            commit('GET_VIDEO', json.items[0].snippet)
           }
         })
         .catch(e => {
           throw e
         })
     },
-    async getVideo({ commit, state }, videoURL) {
+    // Получение коментариев
+    async GET_COMENTS_ACTION({ commit, dispatch, state }, videoURL, nextPageToken = '') {
       const apiKey = state.apiKey;
       const url = videoURL
-      await fetch(`https://youtube.googleapis.com/youtube/v3/videos?part=snippet&key=${apiKey}&id=${url}`)
+      await fetch(`https://youtube.googleapis.com/youtube/v3/commentThreads?part=snippet&key=${apiKey}&videoId=${url}&maxResults=100&textFormat=plainText&pageToken=${nextPageToken}`)
         .then(res => res.json())
         .then(json => {
-          commit('getVideo', json.items[0].snippet)
-        })
-        .catch(e => {
-          throw e
-        })
-    },
-    async getComments({ commit, dispatch, state }, videoURL, nextPageToken = state.nextPageToken) {
-      const apiKey = state.apiKey;
-      const url = videoURL
-      await fetch(`https://youtube.googleapis.com/youtube/v3/commentThreads?part=snippet&key=${apiKey}&videoId=${url}&maxResults=100&textFormat=plainText${nextPageToken ? `&pageToken=${nextPageToken}` : ''}`)
-        .then(res => res.json())
-        .then(json => {
+          if (json.error) {
+            commit('SERVER_ERROR_VALIDATEON', json.error)
+          }
           if (json.nextPageToken) {
-            commit('pushComments', json.items)
-            commit('newNextPageToken', json.nextPageToken)
-            dispatch('getComments', url, json.nextPageToken)
+            commit('PUSH_COMENTS', json.items)
+            dispatch('GET_COMENTS_ACTION', url, json.nextPageToken)
           } else {
-            commit('newNextPageToken', null)
-            commit('pushComments', json.items)
-            setTimeout(() => {
-              dispatch('findSubscriptions')
-            }, 3000)
+            commit('PUSH_COMENTS', json.items)
+            // setTimeout(() => {
+            //   dispatch('GET_COMMENTATORS_ID')
+            // }, 3000)
           }
         })
         .catch(e => {
@@ -127,20 +189,23 @@ export default new Vuex.Store({
     },
   },
   getters: {
-    NEXT_PAGE_TOKEN(state) {
-      return state.nextPageToken
-    },
     COMMENTS(state) {
       return state.comments
     },
     VIDEO(state) {
       return state.video
     },
-    WRONG_API(state) {
-      return state.wrongAPI
+    WRONG_API_KEY(state) {
+      return state.wrongAPIKey
     },
     API(state) {
       return state.apiKey
+    },
+    LIMIT_EXCEEDED(state) {
+      return state.limitExceededFlag
+    },
+    LIMIT_EXCEEDED_MSG(state) {
+      return state.limitExceededMsg
     },
 
   },

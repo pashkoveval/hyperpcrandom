@@ -25,12 +25,15 @@
 </template>
 
 <script>
+	import { mapActions } from 'vuex';
 	export default {
 		name: 'App',
-
-		data: () => ({
-			//
-		}),
+		mounted() {
+			this.CHECK_API_LOCKAL_ACTION();
+		},
+		methods: {
+			...mapActions(['CHECK_API_LOCKAL_ACTION']),
+		},
 	};
 </script>
 
