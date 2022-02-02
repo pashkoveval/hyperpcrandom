@@ -1,19 +1,19 @@
 <template>
-	<div class="wrapper" :style="badApiCounter === 3 ? badapi : ''">
+	<v-container :style="badApiCounter === 3 ? badapi : ''">
 		<APIInput v-if="!API" />
-		<test v-if="!WRONG_API_KEY" />
-	</div>
+		<SelectVideo v-if="API && !WRONG_API_KEY && !LIMIT_EXCEEDED" />
+	</v-container>
 </template>
 
 <script>
-	import test from '../components/test';
+	import SelectVideo from '../components/SelectVideo.vue';
 	import APIInput from '../components/APIInput.vue';
 	import { mapGetters } from 'vuex';
 
 	export default {
 		name: 'Home',
 		components: {
-			test,
+			SelectVideo,
 			APIInput,
 		},
 		data() {
