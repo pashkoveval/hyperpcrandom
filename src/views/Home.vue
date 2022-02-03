@@ -1,5 +1,9 @@
 <template>
-	<v-container :style="badApiCounter === 3 ? badapi : ''">
+	<v-container
+		fluid
+		class="main-wrapper"
+		:style="badApiCounter === 3 ? badapi : ''"
+	>
 		<APIInput v-if="!API" />
 		<SelectVideo v-if="API && !WRONG_API_KEY && !LIMIT_EXCEEDED" />
 	</v-container>
@@ -44,12 +48,7 @@
 </script>
 
 <style lang="scss" scoped>
-	.wrapper {
-		width: 100%;
-		height: 100%;
-		padding: 0 20px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
+	.main-wrapper {
+		position: relative;
 	}
 </style>

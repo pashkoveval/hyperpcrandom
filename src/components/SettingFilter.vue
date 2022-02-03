@@ -1,5 +1,6 @@
 <template>
-	<v-form ref="form" v-model="valid" lazy-validation class="mt-5">
+	<div class="filters mt-5">
+		<div class="filters-title mb-5">Параметры фильтрации:</div>
 		<v-checkbox
 			v-model="inputPhrase"
 			dark
@@ -7,10 +8,11 @@
 			color="purple darken-2"
 			:label="
 				!inputPhrase
-					? 'Проверять коментарий на конкретное вырожение ?'
+					? 'Проверять коментарий на содержание ?'
 					: 'Отменить проверку ?'
 			"
-		></v-checkbox>
+			@change="callClearInput"
+		/>
 
 		<v-text-field
 			v-if="inputPhrase"
@@ -38,12 +40,12 @@
 					dark
 					class="ma-0"
 					color="purple darken-2"
-					:label="!inputDate ? 'Выбрать дату ?' : 'Скрыть дату ?'"
+					:label="dateLabel"
 				></v-checkbox>
 			</v-col>
 			<v-col cols="6">
 				<v-btn
-					v-if="inputDate"
+					v-if="dates && dates.length && inputDate"
 					dark
 					outlined
 					width="100%"
@@ -56,7 +58,9 @@
 					v-else-if="dates && dates.length"
 					class="purple mt-1 dateShows py-1"
 				>
-					{{ dates[0] }} - {{ dates[1] }}
+					с
+					{{ currentDateFormat(dates[0]) }}
+					{{ dates[1] ? `по ${currentDateFormat(dates[1])} ` : '' }}
 				</div>
 			</v-col>
 		</v-row>
@@ -76,7 +80,17 @@
 			color="purple darken-2"
 			class="date"
 		></v-date-picker>
-	</v-form>
+
+		<v-btn
+			dark
+			outlined
+			width="100%"
+			color="purple darken-2"
+			@click="toComments"
+		>
+			Перейти к коментариям?
+		</v-btn>
+	</div>
 </template>
 
 <script>
@@ -97,31 +111,73 @@
 				],
 			};
 		},
+		computed: {
+			dateLabel() {
+				if (!this.dates.length && !this.inputDate) {
+					return 'Выбрать дату ?';
+				} else if (!this.dates.length && this.inputDate) {
+					return 'Выбери дату';
+				} else if (this.dates.length && this.inputDate) {
+					return 'Скрыть выбор даты ?';
+				}
+				return 'Выбранная дата: ';
+			},
+		},
+		watch: {
+			dates(v) {
+				if (v.length > 1) {
+					this.checkDatesEqvl();
+				}
+			},
+		},
 		methods: {
+			toComments() {
+				if (this.dates) {
+					this.$store.dispatch('SAVE_FILTRED_DATE_ACTION', this.dates);
+				}
+				if (this.includText) {
+					this.$store.dispatch('SAVE_INCLUDED_TEXT_ACTION', this.includText);
+				}
+				this.$store.dispatch('SHOW_COMMENTS_ACTION');
+			},
+			checkDatesEqvl() {
+				if (
+					this.currentDateFormat(this.dates[0]) >
+					this.currentDateFormat(this.dates[1])
+				) {
+					this.dates = [this.dates[1], this.dates[0]];
+				}
+			},
+			currentDateFormat(date) {
+				return this.$moment(date).format('DD.MM.YYYY');
+			},
 			clearDate() {
 				this.dates = [];
 			},
 			clearInput() {
 				this.includText = '';
 			},
-			validate() {
-				this.$refs.form.validate();
-			},
-			reset() {
-				this.$refs.form.reset();
-			},
-			resetValidation() {
-				this.$refs.form.resetValidation();
+			callClearInput(v) {
+				if (!v) {
+					this.clearInput();
+				}
 			},
 		},
 	};
 </script>
 
 <style lang="scss" scoped>
+	.filters {
+		&-title {
+			color: #fff;
+			font-size: 30px;
+		}
+	}
 	.dateShows {
 		color: #fff;
 		display: flex;
 		justify-content: center;
 		align-items: center;
+		font-size: 14px;
 	}
 </style>

@@ -16,18 +16,22 @@ const getRandomInt = (max) => {
 
 export default new Vuex.Store({
   state: {
-    apiKey: '',
-    wrongAPIKey: null,
-    video: null,
-    badUrl: null,
     badUrlCounter: 0,
+    video: null,
+    videoURL: null,
+    badUrl: null,
     errorsMSG: null,
+    wrongAPIKey: null,
+    sowComments: false,
     limitExceededFlag: false,
+    apiKey: '',
+    pageToken: '',
+    textToFilter: '',
     limitExceededMsg: 'Ошибка GF6404!!!',
     hyperPCID: 'UCRS-7r-HT7VXZF2ZDVogueg',
-    testURL: 'KbyclDTvzU8',
     comments: [],
     subscribers: [],
+    dateToFilter: [],
   },
 
   mutations: {
@@ -49,6 +53,7 @@ export default new Vuex.Store({
         }
       }
     },
+
     // Сохранения ключа API
     PUT_API(state, v) {
       state.apiKey = v
@@ -58,6 +63,11 @@ export default new Vuex.Store({
     SAVE_CHECKED_API(state) {
       localStorage.setItem('api', state.apiKey);
       localStorage.setItem('date', Date.now());
+    },
+
+    // Сохранение или очистка url от видео
+    SAVE_VIDEO_URL(state, url) {
+      state.videoURL = url;
     },
 
     // Очистка флага неверно введенного API ключа
@@ -119,6 +129,26 @@ export default new Vuex.Store({
     CLEAN_ERROS_MSG(state) {
       state.errorsMSG = null
     },
+
+    // Показать или скрыть комментарии
+    SHOW_COMMENTS(state) {
+      state.sowComments = !state.sowComments
+    },
+
+    // Сохранение текста для фильтрации
+    SAVE_INCLUDED_TEXT(state, v) {
+      state.dateToFilter = v
+    },
+
+    // Сохранение дат для фильтрации
+    SAVE_INCLUDED_DATE(state, v) {
+      state.textToFilter = v
+    },
+
+    // Сохранение дат для фильтрации
+    SAVE_PAGE_TOKEN(state, v) {
+      state.pageToken = v
+    },
   },
 
   actions: {
@@ -161,14 +191,16 @@ export default new Vuex.Store({
     },
 
     // СОхранение ID всех коментаторов
-    GET_COMMENTATORS_ID({ state }) {
-      const allSubscrubersIds = [];
+    GET_COMMENTATORS_ID_ACTION({ state }) {
+      let allSubscrubersIds = [];
       const comments = state.comments;
       if (comments.length) {
         comments.forEach(el => {
-          allSubscrubersIds.push(el.snippet.topLevelComment.snippet.authorChannelId.value)
+          allSubscrubersIds = [...allSubscrubersIds, el.snippet.topLevelComment.snippet.authorChannelId.value]
         })
       }
+      console.log('allSubscrubersIds', allSubscrubersIds);
+
       // if (allSubscrubersIds.length) {
       //   allSubscrubersIds.forEach(el => {
       //     dispatch('CHECK_SUBSCRIPTION', el)
@@ -207,7 +239,10 @@ export default new Vuex.Store({
             commit('SERVER_ERROR_VALIDATEON', json.error)
             return
           } else if (json.items && json.items.length) {
+            console.log('json.items[0]', json.items[0]);
+
             commit('GET_VIDEO', json.items[0].snippet)
+            commit('SAVE_VIDEO_URL', url)
           } else {
             if (state.badUrlCounter >= 2) {
               commit('SERVER_ERROR_VALIDATEON', { errors: [{ reason: 'badUrlAgain' }] })
@@ -220,24 +255,27 @@ export default new Vuex.Store({
           throw e
         })
     },
+
     // Получение коментариев
-    async GET_COMENTS_ACTION({ commit, dispatch, state }, videoURL, nextPageToken = '') {
+    async GET_COMENTS_ACTION({ commit, dispatch, state }, videoURL = state.videoURL, nextPageToken = state.pageToken) {
       const apiKey = state.apiKey;
-      const url = videoURL
-      await fetch(`https://youtube.googleapis.com/youtube/v3/commentThreads?part=snippet&key=${apiKey}&videoId=${url}&maxResults=100&textFormat=plainText&pageToken=${nextPageToken}`)
+      await fetch(`https://youtube.googleapis.com/youtube/v3/commentThreads?part=snippet&key=${apiKey}&videoId=${videoURL}&maxResults=100&textFormat=plainText&pageToken=${nextPageToken}`)
         .then(res => res.json())
         .then(json => {
           if (json.error) {
             commit('SERVER_ERROR_VALIDATEON', json.error)
           }
+          console.log('json.items', json.items);
+
           if (json.nextPageToken) {
             commit('PUSH_COMENTS', json.items)
-            dispatch('GET_COMENTS_ACTION', url, json.nextPageToken)
+            commit('SAVE_PAGE_TOKEN', json.nextPageToken)
+            setTimeout(() => {
+              dispatch('GET_COMENTS_ACTION', videoURL, json.nextPageToken)
+            }, 5000)
           } else {
             commit('PUSH_COMENTS', json.items)
-            // setTimeout(() => {
-            //   dispatch('GET_COMMENTATORS_ID')
-            // }, 3000)
+            dispatch('GET_COMMENTATORS_ID_ACTION')
           }
         })
         .catch(e => {
@@ -245,6 +283,23 @@ export default new Vuex.Store({
         })
 
     },
+
+    // Показ или скрытие коментариев
+    SHOW_COMMENTS_ACTION({ commit, dispatch }) {
+      dispatch('GET_COMENTS_ACTION')
+      commit('SHOW_COMMENTS')
+    },
+
+    // Сохранение текста для фильтрации
+    SAVE_INCLUDED_TEXT_ACTION({ commit }, v) {
+      commit('SAVE_INCLUDED_TEXT', v)
+    },
+
+    // Сохранение даты для фильтрации
+    SAVE_FILTRED_DATE_ACTION({ commit }, v) {
+      commit('SAVE_INCLUDED_DATE', v)
+    },
+
   },
   getters: {
     COMMENTS(state) {
@@ -271,6 +326,14 @@ export default new Vuex.Store({
     LIMIT_EXCEEDED_MSG(state) {
       return state.limitExceededMsg
     },
-
+    SHOW_COMMETS_FLAG(state) {
+      return state.sowComments
+    },
+    DATE_TO_FILTER(state) {
+      return state.dateToFilter
+    },
+    TEXT_TO_FILTER(state) {
+      return state.textToFilter
+    }
   },
 })
