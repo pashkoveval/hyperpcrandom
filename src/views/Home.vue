@@ -50,5 +50,6 @@
 <style lang="scss" scoped>
 	.main-wrapper {
 		position: relative;
+		height: 100%;
 	}
 </style>
