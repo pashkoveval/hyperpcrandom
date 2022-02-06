@@ -1,12 +1,8 @@
 <template>
-	<v-container
-		fluid
-		class="main-wrapper"
-		:style="badApiCounter === 3 ? badapi : ''"
-	>
+	<div class="main-wrapper pa-5" :style="badApiCounter === 3 ? badapi : ''">
 		<APIInput v-if="!API" />
-		<SelectVideo v-if="API && !WRONG_API_KEY && !LIMIT_EXCEEDED" />
-	</v-container>
+		<SelectVideo v-if="!!API && !WRONG_API_KEY && !LIMIT_EXCEEDED" />
+	</div>
 </template>
 
 <script>

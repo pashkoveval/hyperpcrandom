@@ -1,26 +1,31 @@
 <template>
-	<v-card class="ma-1" outlined dark color="purple darken-3 coment-card">
+	<v-card
+		class="ma-1 pa-1 comment-card"
+		outlined
+		dark
+		:class="{ winner: winner }"
+	>
 		<v-list-item three-line>
 			<v-list-item-content>
 				<div class="text-overline mb-4">
-					{{ coment.snippet.topLevelComment.snippet.authorDisplayName }}
+					{{ comment.snippet.topLevelComment.snippet.authorDisplayName }}
 				</div>
 
 				<!-- <v-list-item-title class="text-h5 mb-1">
 					Дата публикации
-					{{ $moment(coment.snippet.topLevelComment.snippet.publishedAt).format('DD.MM.YYYY') }}
+					{{ $moment(comment.snippet.topLevelComment.snippet.publishedAt).format('DD.MM.YYYY') }}
 				</v-list-item-title> -->
 				<v-list-item-subtitle>
 					<div class="d-flex flex-column">
 						<span class="mb-2">
 							<v-icon>mdi-thumb-up-outline</v-icon>
-							{{ coment.snippet.topLevelComment.snippet.likeCount }}
+							{{ comment.snippet.topLevelComment.snippet.likeCount }}
 						</span>
 						<span> Дата публикации: </span>
 						<span>
 							{{
 								$moment(
-									coment.snippet.topLevelComment.snippet.publishedAt
+									comment.snippet.topLevelComment.snippet.publishedAt
 								).format('h:mm, DD.MM.YYYY')
 							}}
 						</span>
@@ -30,7 +35,7 @@
 
 			<v-list-item-avatar size="80" color="grey">
 				<v-img
-					:src="coment.snippet.topLevelComment.snippet.authorProfileImageUrl"
+					:src="comment.snippet.topLevelComment.snippet.authorProfileImageUrl"
 				/>
 			</v-list-item-avatar>
 		</v-list-item>
@@ -40,7 +45,7 @@
 				outlined
 				rounded
 				text
-				:href="`${coment.snippet.topLevelComment.snippet.authorChannelUrl}/about`"
+				:href="`${comment.snippet.topLevelComment.snippet.authorChannelUrl}/about`"
 				target="_blank"
 			>
 				Перейти на канал
@@ -55,7 +60,7 @@
 					</v-btn>
 				</template>
 				<span>
-					{{ !expand ? 'Показать коментарий' : 'Скрыть коментарий' }}
+					{{ !expand ? 'Показать комментарий' : 'Скрыть комментарий' }}
 				</span>
 			</v-tooltip>
 		</v-card-actions>
@@ -64,7 +69,7 @@
 				<v-divider></v-divider>
 
 				<v-card-text>
-					{{ coment.snippet.topLevelComment.snippet.textDisplay }}
+					{{ comment.snippet.topLevelComment.snippet.textDisplay }}
 				</v-card-text>
 			</div>
 		</v-expand-transition>
@@ -73,11 +78,15 @@
 
 <script>
 	export default {
-		name: 'coment-card',
+		name: 'comment-card',
 		props: {
-			coment: {
+			comment: {
 				type: Object,
 				default: () => {},
+			},
+			winner: {
+				type: Boolean,
+				default: false,
 			},
 		},
 		data() {
@@ -90,10 +99,14 @@
 </script>
 
 <style lang="scss" scoped>
-	.coment-card {
-		width: 45%;
-		@media (min-width: 1265px) {
-			width: 300px;
-		}
+	.winner {
+		background: #283048;
+		background: -webkit-linear-gradient(to right, #360033, #283048);
+		background: linear-gradient(to right, #360033, #283048);
+	}
+	.comment-card {
+		background: #283048;
+		background: -webkit-linear-gradient(to right, #360033, #283048);
+		background: linear-gradient(to right, #460242, #1c2644);
 	}
 </style>

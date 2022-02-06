@@ -6,7 +6,7 @@
 				v-model="url"
 				dark
 				outlined
-				color="purple darken-2"
+				color="purple "
 				label="Введи ссылку видео"
 				class="input"
 				hide-details
@@ -27,7 +27,7 @@
 			</v-text-field>
 		</v-scale-transition>
 		<v-scale-transition leave-absolute>
-			<v-btn v-if="VIDEO" outlined color="purple darken-2" @click="deleteVideo">
+			<v-btn v-if="VIDEO" outlined color="purple " @click="deleteVideo">
 				Выбрать другое видео ?
 			</v-btn>
 		</v-scale-transition>

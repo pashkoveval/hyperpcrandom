@@ -1,5 +1,6 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
+import moment from "moment";
 
 Vue.use(Vuex)
 
@@ -17,21 +18,25 @@ const getRandomInt = (max) => {
 export default new Vuex.Store({
   state: {
     badUrlCounter: 0,
+    totalComments: 0,
     video: null,
     videoURL: null,
     badUrl: null,
+    filters: null,
     errorsMSG: null,
     wrongAPIKey: null,
     sowComments: false,
     limitExceededFlag: false,
     apiKey: '',
     pageToken: '',
-    textToFilter: '',
     limitExceededMsg: 'Ошибка GF6404!!!',
     hyperPCID: 'UCRS-7r-HT7VXZF2ZDVogueg',
     comments: [],
+    startersComments: [],
+    filteredByTextComments: [],
+    filteredByDateComments: [],
+    winners: [],
     subscribers: [],
-    dateToFilter: [],
   },
 
   mutations: {
@@ -113,10 +118,10 @@ export default new Vuex.Store({
       }
     },
 
-    // Сохранение и очистка коментариев 
+    // Сохранение и очистка комментариев 
     PUSH_COMENTS(state, v) {
       if (v) {
-        state.comments = [...state.comments, ...v]
+        state.comments = [...v, ...state.comments]
       }
     },
 
@@ -135,23 +140,204 @@ export default new Vuex.Store({
       state.sowComments = !state.sowComments
     },
 
-    // Сохранение текста для фильтрации
-    SAVE_INCLUDED_TEXT(state, v) {
-      state.dateToFilter = v
-    },
-
-    // Сохранение дат для фильтрации
-    SAVE_INCLUDED_DATE(state, v) {
-      state.textToFilter = v
-    },
-
     // Сохранение дат для фильтрации
     SAVE_PAGE_TOKEN(state, v) {
       state.pageToken = v
     },
-  },
 
+    SAVE_FILTER_SETTINGS(state, v) {
+      state.filters = v
+    },
+
+    SET_TOTAL_COMENTS(state, status) {
+      state.totalComments = {
+        status,
+        value: state.comments.length
+      }
+    },
+
+    START_FILTER_COMMENTS(state) {
+      const dropLink = (v) => {
+        return JSON.parse(JSON.stringify(v))
+      }
+
+      const ferstFiltredComents = dropLink(state.comments);
+      state.startersComments = ferstFiltredComents;
+      const filters = state.filters;
+      let filterAfterTextFilter = [];
+
+
+      const filerByID = (arr) => {
+        let filterTextAndID = null;
+        if (filters.countComents.value) {
+          filterTextAndID = arr.reduce((unique, o) => {
+            if (!unique.some(obj => obj.snippet.topLevelComment.snippet.authorChannelId.value === o.snippet.topLevelComment.snippet.authorChannelId.value)) {
+              unique.push(o);
+            }
+            return unique;
+          }, []);
+        } else {
+          filterTextAndID = arr
+        }
+        return filterTextAndID
+      }
+
+      const filterByTextFunc = (stopProcces = false) => {
+        console.log('start Filter TEXT');
+        state.totalComments = {
+          status: 'startFilteridByText',
+          value: state.comments.length
+        }
+        setTimeout(() => {
+          const filterText = ferstFiltredComents.filter(el => el.snippet.topLevelComment.snippet.textDisplay.includes(filters.textIncluds.value));
+          state.filteredByTextComments = filerByID(filterText);
+          state.comments = state.filteredByTextComments;
+          filterAfterTextFilter = state.filteredByTextComments;
+          state.totalComments = {
+            status: 'filteridByText',
+            value: state.comments.length
+          }
+        }, 1000)
+        if (stopProcces) {
+          setTimeout(() => {
+            state.totalComments = {
+              status: 'stopProcces',
+              value: state.comments.length
+            }
+          }, 2000)
+        }
+      }
+
+      const filterByDateFunc = (filterAfterTextFilter = state.comments, stopProcces = false) => {
+        const getDate = (d) => {
+          return moment(d).format('YYYY-MM-DD');
+        }
+
+        let dateStart = filters.date.value[0];
+        let dateEnd = filters.date.value[1];
+
+        if (dateEnd && moment(dateEnd).isAfter(dateStart)) {
+          const newDates = [
+            filters.date.value[1],
+            filters.date.value[0],
+          ];
+          filters.date.value = newDates;
+        }
+
+        state.totalComments = {
+          status: 'startFilteridByDate',
+          value: state.comments.length
+        }
+
+        setTimeout(() => {
+          let sortedComentsByDate = null;
+          if (dateStart && dateEnd) {
+            sortedComentsByDate = filterAfterTextFilter.filter(el => {
+              const pd = moment(el.snippet.topLevelComment.snippet.publishedAt);
+              const ds = moment(dateStart)
+              const de = moment(dateEnd)
+              return moment(pd).isBetween(ds, de)
+            })
+            sortedComentsByDate.sort((a, b) => {
+              const aa = moment(a.snippet.topLevelComment.snippet.publishedAt)
+              const bb = moment(b.snippet.topLevelComment.snippet.publishedAt)
+              if (aa > bb) {
+                return -1;
+              }
+              if (aa < bb) {
+                return 1;
+              }
+              return 0;
+            })
+          } else {
+            sortedComentsByDate = filterAfterTextFilter.filter(el => {
+              const pd = getDate(el.snippet.topLevelComment.snippet.publishedAt);
+              const ds = moment(dateStart)
+              return moment(pd).isSame(ds)
+            });
+          }
+          state.comments = filerByID(sortedComentsByDate);
+          state.totalComments = {
+            status: 'filteridByDate',
+            value: state.comments.length
+          }
+        }, 1000)
+        if (stopProcces) {
+          setTimeout(() => {
+            state.totalComments = {
+              status: 'stopProcces',
+              value: state.comments.length
+            }
+          }, 2000)
+        }
+      }
+
+
+      if (filters.textIncluds.value && filters.textIncluds.value.length > 0 && filters.date.value && filters.date.value.length > 0) {
+        filterByTextFunc();
+        setTimeout(() => {
+          filterByDateFunc(filterAfterTextFilter, true);
+        }, 3000)
+        console.log('filterByTextFunc && filterByDateFunc');
+        return
+      } else if (filters.date.value && filters.date.value.length > 0) {
+        filterByDateFunc(state.comments, true);
+        console.log('filterByDateFunc');
+        return
+      } else if (filters.textIncluds.value && filters.textIncluds.value.length > 0) {
+        filterByTextFunc(true);
+        console.log('filteridByText');
+        return
+      } else if (filters.countComents.value) {
+        state.comments = filerByID(state.comments)
+      } else {
+        setTimeout(() => {
+          state.totalComments = {
+            status: 'stopProcces',
+            value: state.comments.length
+          }
+        }, 2000)
+      }
+
+    },
+
+    FIND_WINNER(state, v) {
+      state.winners = v
+      state.comments = v
+    }
+
+    // MUTATION
+  },
+  // MUTATION
+
+  // ACTION
   actions: {
+    // ACTION
+
+    FIND_WINNER_ACTON({ commit, state }) {
+      console.log('gg');
+
+      const winners = []
+      const winIDXArr = []
+      const comments = state.comments
+      const countWiners = state.filters.countWiners.value
+
+      for (let i = 0; i < countWiners; i++) {
+        if (i !== countWiners) {
+          const idx = getRandomInt(comments.length)
+          comments.splice(idx, 1)
+          winIDXArr.push(idx)
+        }
+      }
+
+      winIDXArr.forEach(el => {
+        const winner = comments[el]
+        winners.push(winner)
+      })
+
+      commit('FIND_WINNER', winners)
+    },
+
     // Вызов проверки сохраненного ключа с прошлой сессии
     CHECK_API_LOCKAL_ACTION({ commit }) {
       commit('CHECK_API_LOCKAL')
@@ -172,12 +358,12 @@ export default new Vuex.Store({
       await fetch(`https://youtube.googleapis.com/youtube/v3/videos?part=snippet&key=${api}&id=${url}`)
         .then(res => res.json())
         .then(json => {
-          commit('SAVE_CHECKED_API')
           if (json.error) {
             commit('SERVER_ERROR_VALIDATEON', json.error)
           } else {
             commit('PUT_API', api)
             commit('SAVE_CHECKED_API')
+            commit('CLEAN_BAD_API_FLAG')
           }
         })
         .catch(e => {
@@ -199,8 +385,6 @@ export default new Vuex.Store({
           allSubscrubersIds = [...allSubscrubersIds, el.snippet.topLevelComment.snippet.authorChannelId.value]
         })
       }
-      console.log('allSubscrubersIds', allSubscrubersIds);
-
       // if (allSubscrubersIds.length) {
       //   allSubscrubersIds.forEach(el => {
       //     dispatch('CHECK_SUBSCRIPTION', el)
@@ -239,8 +423,6 @@ export default new Vuex.Store({
             commit('SERVER_ERROR_VALIDATEON', json.error)
             return
           } else if (json.items && json.items.length) {
-            console.log('json.items[0]', json.items[0]);
-
             commit('GET_VIDEO', json.items[0].snippet)
             commit('SAVE_VIDEO_URL', url)
           } else {
@@ -256,7 +438,7 @@ export default new Vuex.Store({
         })
     },
 
-    // Получение коментариев
+    // Получение комментариев
     async GET_COMENTS_ACTION({ commit, dispatch, state }, videoURL = state.videoURL, nextPageToken = state.pageToken) {
       const apiKey = state.apiKey;
       await fetch(`https://youtube.googleapis.com/youtube/v3/commentThreads?part=snippet&key=${apiKey}&videoId=${videoURL}&maxResults=100&textFormat=plainText&pageToken=${nextPageToken}`)
@@ -265,8 +447,6 @@ export default new Vuex.Store({
           if (json.error) {
             commit('SERVER_ERROR_VALIDATEON', json.error)
           }
-          console.log('json.items', json.items);
-
           if (json.nextPageToken) {
             commit('PUSH_COMENTS', json.items)
             commit('SAVE_PAGE_TOKEN', json.nextPageToken)
@@ -276,6 +456,10 @@ export default new Vuex.Store({
           } else {
             commit('PUSH_COMENTS', json.items)
             dispatch('GET_COMMENTATORS_ID_ACTION')
+            commit('SET_TOTAL_COMENTS', 'getComments')
+            setTimeout(() => {
+              commit('START_FILTER_COMMENTS')
+            }, 3000)
           }
         })
         .catch(e => {
@@ -284,23 +468,20 @@ export default new Vuex.Store({
 
     },
 
-    // Показ или скрытие коментариев
+    // Показ или скрытие комментариев
     SHOW_COMMENTS_ACTION({ commit, dispatch }) {
       dispatch('GET_COMENTS_ACTION')
       commit('SHOW_COMMENTS')
     },
 
-    // Сохранение текста для фильтрации
-    SAVE_INCLUDED_TEXT_ACTION({ commit }, v) {
-      commit('SAVE_INCLUDED_TEXT', v)
-    },
+    SAVE_FILTER_SETTINGS_ACTION({ commit }, v) {
+      commit('SAVE_FILTER_SETTINGS', v)
+    }
 
-    // Сохранение даты для фильтрации
-    SAVE_FILTRED_DATE_ACTION({ commit }, v) {
-      commit('SAVE_INCLUDED_DATE', v)
-    },
-
+    // ACTION
   },
+  // ACTION
+
   getters: {
     COMMENTS(state) {
       return state.comments
@@ -329,11 +510,14 @@ export default new Vuex.Store({
     SHOW_COMMETS_FLAG(state) {
       return state.sowComments
     },
-    DATE_TO_FILTER(state) {
-      return state.dateToFilter
+    FILTERS(state) {
+      return state.filters
     },
-    TEXT_TO_FILTER(state) {
-      return state.textToFilter
-    }
+    TOTAL_COMENTS(state) {
+      return state.totalComments
+    },
+    WINNERS(state) {
+      return state.winners
+    },
   },
 })

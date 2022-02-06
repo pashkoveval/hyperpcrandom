@@ -12,7 +12,7 @@
 			class="input mx-5 mb-5"
 		/>
 		<span
-			v-if="WRONG_API_KEY && api && api.length === 39 && !LIMIT_EXCEEDED"
+			v-if="WRONG_API_KEY && api && api.length !== 39 && !LIMIT_EXCEEDED"
 			class="error errorMSG pa-2"
 		>
 			{{ wrongApiMsg }}
@@ -39,8 +39,6 @@
 			api(v) {
 				if (v && v.length === 39) {
 					this.$store.dispatch('TEST_API_KEY_ACTION', v);
-				} else {
-					this.$store.dispatch('CLEAN_BAD_API_FLAG_ACTION');
 				}
 			},
 		},

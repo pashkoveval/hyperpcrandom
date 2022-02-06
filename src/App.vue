@@ -22,15 +22,33 @@
 	};
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
+	/* ===== Scrollbar CSS ===== */
+	/* Firefox */
+	* {
+		scrollbar-width: thin;
+		scrollbar-color: #5c0e71 #ffffff;
+	}
+
+	/* Chrome, Edge, and Safari */
+	*::-webkit-scrollbar {
+		width: 10px;
+	}
+
+	*::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	*::-webkit-scrollbar-thumb {
+		background-color: #5c0e71;
+		border-radius: 20px;
+		border: 2px double #ffffff;
+	}
 	.main {
+		overflow: hidden;
 		padding-bottom: 5px;
-		background: rgb(0, 0, 0);
-		background: linear-gradient(
-			90deg,
-			rgba(0, 0, 0, 1) 30%,
-			rgba(91, 9, 121, 1) 82%,
-			rgba(91, 9, 121, 1) 100%
-		);
+		background: #360033;
+		background: -webkit-linear-gradient(to right, #000000, #360033, #0b8793);
+		background: linear-gradient(to right, #000000, #360033, #0b8793);
 	}
 </style>

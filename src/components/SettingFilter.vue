@@ -1,12 +1,33 @@
 <template>
-	<div class="filters mt-5">
-		<div class="filters-title mb-5">Параметры фильтрации:</div>
+	<v-row class="filters d-flex mt-5">
+		<v-flex sm12>
+			<div class="filters-title mb-5">Параметры фильтрации:</div>
 
-		<v-form ref="form" v-model="valid" lazy-validation>
+			<v-flex
+				v-if="errorArr && errorArr.length > 0"
+				sm12
+				class="error-alert error mb-5 px-3 py-1"
+			>
+				Не заполнены нужные поля:
+				<span v-for="(err, idx) in errorArr" :key="idx">
+					<strong> {{ err }} </strong>
+				</span>
+			</v-flex>
+		</v-flex>
+
+		<v-flex sm6 class="pr-5">
+			<v-checkbox
+				v-model="filters.countComents.value"
+				dark
+				:color="color"
+				hide-details
+				class="mb-5"
+				:label="filters.countComents.des"
+			/>
 			<!-- Выбор количества победителей -->
 			<div class="winers-count">
 				<v-text-field
-					v-model="filters.countWiners"
+					v-model="filters.countWiners.value"
 					:color="color"
 					hide-details
 					outlined
@@ -20,7 +41,7 @@
 			</div>
 			<!-- Выбор количества победителей -->
 
-			<!-- Проверка коментария на содержания выражения или слова -->
+			<!-- Проверка комментария на содержания выражения или слова -->
 			<div class="includded-text">
 				<v-checkbox
 					v-model="validationForm.inputPhrase"
@@ -30,92 +51,80 @@
 					class="mt-5"
 					:label="
 						!validationForm.inputPhrase
-							? 'Проверять коментарий на содержание ?'
-							: 'Проверка коментария на содержание вкдючена'
+							? 'Проверять комментарий на содержание ?'
+							: 'Проверка комментария на содержание включена'
 					"
 					@change="callClearInput"
 				/>
 
-				<v-text-field
-					v-model="filters.textIncluds"
-					dark
-					outlined
-					:color="color"
-					:rules="textRules"
-					:disabled="!validationForm.inputPhrase"
-					class="mt-1"
-					label="Введи что дожен содержать коментарий..."
-				>
-					<template v-slot:append>
-						<v-fade-transition leave-absolute>
-							<v-btn v-if="textIncluds" icon @click="clearable">
-								<v-icon size="20px">mdi-close-circle-outline</v-icon>
-							</v-btn>
-						</v-fade-transition>
-					</template>
-				</v-text-field>
+				<v-fade-transition leave-absolute>
+					<v-text-field
+						v-if="validationForm.inputPhrase"
+						v-model="filters.textIncluds.value"
+						dark
+						outlined
+						:color="color"
+						:disabled="!validationForm.inputPhrase"
+						hide-details
+						class="mt-1"
+						label="Введи что должен содержать комментарий..."
+					>
+						<template v-slot:append>
+							<v-fade-transition leave-absolute>
+								<v-btn v-if="filters.textIncluds.value" icon @click="clearable">
+									<v-icon size="20px">mdi-close-circle-outline</v-icon>
+								</v-btn>
+							</v-fade-transition>
+						</template>
+					</v-text-field>
+				</v-fade-transition>
 			</div>
-			<!-- Проверка коментария на содержания выражения или слова -->
+			<!-- Проверка комментария на содержания выражения или слова -->
+		</v-flex>
 
+		<v-flex sm6 class="pl-5">
 			<!-- Выбор даты розыграша -->
-			<div class="date">
-				<v-row>
-					<v-col cols="6">
-						<v-checkbox
-							v-model="validationForm.inputDate"
-							dark
-							class="ma-0"
-							:color="color"
-							:label="dateLabel"
-							@click="hideDate = true"
-						></v-checkbox>
-					</v-col>
-					<v-col cols="6">
-						<v-btn
-							v-if="filters.dates && filters.dates.length && inputDate"
-							dark
-							outlined
-							width="100%"
-							:color="color"
-							@click="clearDate"
-						>
-							Очистить ?
-						</v-btn>
-						<div
-							v-else-if="filters.dates && filters.dates.length"
-							class="purple mt-1 dateShows py-1"
-							@click="showOrHideDatePicker(true)"
-						>
-							с
-							{{ currentDateFormat(filters.dates[0]) }}
-							{{
-								filters.dates[1]
-									? `по ${currentDateFormat(filters.dates[1])} `
-									: ''
-							}}
-						</div>
-					</v-col>
-				</v-row>
+			<div class="date mt-5">
+				<v-checkbox
+					v-model="validationForm.inputDate"
+					dark
+					class="ma-0"
+					:color="color"
+					:label="dateLabel"
+					@change="dateClick"
+				></v-checkbox>
+				<div
+					v-if="filters.date.value && filters.date.value.length"
+					class="purple mt-1 dateShows py-1"
+					@click="showOrHideDatePicker(true)"
+				>
+					с
+					{{ currentDateFormat(filters.date.value[0]) }}
+					{{
+						filters.date.value[1]
+							? `по ${currentDateFormat(filters.date.value[1])} `
+							: ''
+					}}
+				</div>
 
 				<v-date-picker
 					v-if="hideDate && validationForm.inputDate"
-					v-model="filters.dates"
+					v-model="filters.date.value"
 					range
-					full-width
 					dark
+					width="auto"
 					locale="RU"
 					no-title
 					reactive
-					required
 					scrollable
-					landscape
 					:color="color"
 					v-click-outside="clickOutsideDate"
-					class="date"
 				></v-date-picker>
 			</div>
 			<!-- Выбор даты розыграша -->
+		</v-flex>
 
+		<v-flex sm12>
 			<v-btn
 				dark
 				outlined
@@ -124,10 +133,10 @@
 				color="purple accent-1"
 				@click="toComments"
 			>
-				Перейти к коментариям?
+				Перейти к комментариям?
 			</v-btn>
-		</v-form>
-	</div>
+		</v-flex>
+	</v-row>
 </template>
 
 <script>
@@ -136,9 +145,22 @@
 		data() {
 			return {
 				filters: {
-					countWiners: 1,
-					textIncluds: '',
-					dates: [],
+					countComents: {
+						des: 'Разрешен лишь один комментарий',
+						value: true,
+					},
+					countWiners: {
+						des: 'Количество победителей:',
+						value: 1,
+					},
+					textIncluds: {
+						des: 'В комментарий содержится:',
+						value: '',
+					},
+					date: {
+						des: 'Даты публикации комментария:',
+						value: [],
+					},
 				},
 				validationForm: {
 					inputDate: true,
@@ -147,29 +169,26 @@
 				valid: true,
 				inputDate: false,
 				hideDate: true,
-				textIncluds: '',
-				color: 'purple darken-2',
-				dateRules: [(v) => !!v || 'Опять про даты забыл ?'],
-				textRules: [
-					(v) =>
-						!!v ||
-						'Артём!!!🤬🤬🤬 Пустые коментарии не допустимы! Ну или отключи эту проверку  😇',
-				],
+				errorText: 'Содержание комментария',
+				errorDate: 'Дата',
+				errorArr: [],
+				color: 'purple ',
 			};
 		},
 		computed: {
 			dateLabel() {
-				if (!this.filters.dates.length && this.validationForm.inputDate) {
-					return 'Выберать период дат розыграша';
+				if (!this.filters.date.value.length && this.validationForm.inputDate) {
+					return 'Выбрать период дат для розыграша';
 				} else if (!this.validationForm.inputDate) {
-					return 'Выберать период дат розыграша ?';
+					return 'Выбрать период дат для розыграша ?';
 				}
 				return 'Выбранная дата: ';
 			},
 		},
 		watch: {
-			'filters.dates': {
+			'filters.date.value': {
 				handler(v) {
+					// new Date(date)
 					if (v.length > 1) {
 						this.checkDatesEqvl();
 					}
@@ -177,44 +196,70 @@
 			},
 		},
 		methods: {
+			clearValidate() {
+				this.errorArr = [];
+			},
 			validate() {
-				this.$refs.form.validate();
-			},
-			reset() {
-				this.$refs.form.reset();
-			},
-			resetValidation() {
-				this.$refs.form.resetValidation();
-			},
-			showOrHideDatePicker(v) {
-				this.hideDate = v;
+				const textReq = this.validationForm.inputPhrase;
+				const dateReq = this.validationForm.inputDate;
+				let text = null;
+				let date = null;
+				if (textReq) {
+					text =
+						this.filters.textIncluds.value &&
+						this.filters.textIncluds.value.length > 0 &&
+						textReq
+							? true
+							: false;
+					if (!text) {
+						this.errorArr.push(this.errorText);
+					}
+				}
+				if (dateReq) {
+					date =
+						this.filters.date.value &&
+						this.filters.date.value.length > 0 &&
+						dateReq
+							? true
+							: false;
+					if (!date) {
+						this.errorArr.push(this.errorDate);
+					}
+				}
+				if (textReq && !dateReq && text) {
+					return true;
+				} else if (!textReq && dateReq && date) {
+					return true;
+				} else if (textReq && dateReq && date && text) {
+					return true;
+				} else if (!textReq && !dateReq) {
+					return true;
+				} else {
+					return false;
+				}
 			},
 			clickOutsideDate() {
-				if (this.filters.dates.length > 0) {
+				if (this.filters.date.value.length > 0) {
 					this.showOrHideDatePicker(false);
 				}
 			},
 			toComments() {
 				if (this.validate()) {
-					console.log('gg', this.filters);
-
-					// if (this.filters.dates) {
-					// 	this.$store.dispatch(
-					// 		'SAVE_FILTRED_DATE_ACTION',
-					// 		this.filters.dates
-					// 	);
-					// }
-					// if (this.textIncluds) {
-					// 	this.$store.dispatch('SAVE_INCLUDED_TEXT_ACTION', this.textIncluds);
-					// }
-					// this.$store.dispatch('SHOW_COMMENTS_ACTION');
+					const string = this.filters.countWiners.value.toString();
+					this.filters.countWiners.value = string;
+					this.$store.dispatch('SAVE_FILTER_SETTINGS_ACTION', this.filters);
+					this.$store.dispatch('SHOW_COMMENTS_ACTION');
+					console.log('filters', this.filters);
 				}
 			},
 			checkDatesEqvl() {
-				const dateA = this.currentDateFormat(this.filters.dates[0]);
-				const dateB = this.currentDateFormat(this.filters.dates[1]);
-				if (dateA > dateB) {
-					this.filters.dates = [this.filters.dates[1], this.filters.dates[0]];
+				const dateA = this.filters.date.value[0];
+				const dateB = this.filters.date.value[1];
+				if (this.$moment(dateA).isAfter(dateB)) {
+					this.filters.date.value = [
+						this.filters.date.value[1],
+						this.filters.date.value[0],
+					];
 				} else if (dateA === dateB) {
 					this.clearDate();
 				}
@@ -222,13 +267,26 @@
 			currentDateFormat(date) {
 				return this.$moment(date).format('DD.MM.YYYY');
 			},
+			dateClick(v) {
+				this.clearValidate();
+				if (!v) {
+					this.clearDate();
+					this.showOrHideDatePicker(false);
+				} else {
+					this.showOrHideDatePicker(true);
+				}
+			},
+			showOrHideDatePicker(v) {
+				this.hideDate = v;
+			},
 			clearDate() {
-				this.filters.dates = [];
+				this.filters.date.value = [];
 			},
 			clearable() {
-				this.filters.textIncluds = '';
+				this.filters.textIncluds.value = '';
 			},
 			callClearInput(v) {
+				this.clearValidate();
 				if (!v) {
 					this.clearable();
 				}
@@ -239,29 +297,31 @@
 
 <style lang="scss" scoped>
 	.filters {
+		width: 100%;
+		height: 100%;
 		&-title {
 			color: #fff;
 			font-size: 30px;
 		}
-	}
-	.winers-count {
-		display: flex;
-		color: #fff;
-		&_input {
-			width: 60px;
-		}
-	}
-	.date {
-		.dateShows {
-			color: #fff;
+		.winers-count {
 			display: flex;
-			justify-content: center;
-			align-items: center;
-			font-size: 14px;
-			cursor: pointer;
-			transition: all 0.3s;
-			&:hover {
-				opacity: 0.7;
+			color: #fff;
+			&_input {
+				width: 60px;
+			}
+		}
+		.date {
+			.dateShows {
+				color: #fff;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				font-size: 14px;
+				cursor: pointer;
+				transition: all 0.3s;
+				&:hover {
+					opacity: 0.7;
+				}
 			}
 		}
 	}

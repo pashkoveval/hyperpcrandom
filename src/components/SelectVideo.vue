@@ -1,20 +1,20 @@
 <template>
 	<div>
 		<v-fade-transition leave-absolute>
-			<v-row v-if="!SHOW_COMMETS_FLAG">
-				<v-col cols="6">
+			<div v-if="!SHOW_COMMETS_FLAG" class="d-flex">
+				<v-flex sm8>
 					<v-fade-transition leave-absolute>
 						<ErrorAlert v-if="ERROR_MSG" />
 					</v-fade-transition>
 					<VideoInput />
 					<SettingFilter v-if="VIDEO" />
-				</v-col>
-				<v-col cols="6">
+				</v-flex>
+				<v-flex sm4>
 					<v-fade-transition leave-absolute>
 						<Video v-if="VIDEO" :video="VIDEO" />
 					</v-fade-transition>
-				</v-col>
-			</v-row>
+				</v-flex>
+			</div>
 		</v-fade-transition>
 		<v-fade-transition leave-absolute>
 			<Coments v-if="SHOW_COMMETS_FLAG" />

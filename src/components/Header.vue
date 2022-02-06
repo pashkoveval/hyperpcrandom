@@ -34,13 +34,15 @@
 
 <style lang="scss" scoped>
 	.header {
-		background: rgb(0, 0, 0);
 		background: linear-gradient(
 			90deg,
 			rgba(0, 0, 0, 1) 30%,
 			rgba(91, 9, 121, 1) 82%,
 			rgba(91, 9, 121, 1) 100%
 		);
+		background: #360033;
+		background: -webkit-linear-gradient(to right, #000000, #360033, #0b8793);
+		background: linear-gradient(to right, #000000, #360033, #0b8793);
 		.textadvertisement {
 			display: flex;
 			width: 70%;
@@ -55,11 +57,6 @@
 				z-index: 2;
 				top: 0;
 				left: 0;
-				background: linear-gradient(
-					90deg,
-					rgba(0, 0, 0, 1) 0%,
-					rgba(255, 255, 255, 0) 20%
-				);
 			}
 			@-webkit-keyframes scroll {
 				0% {

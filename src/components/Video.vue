@@ -8,6 +8,9 @@
 				<v-img class="video-img_wrapper-img" :src="videoSRC" />
 			</div>
 			<div class="video-description px-5 py-3">
+				<div class="public-date mb-5">
+					Дата публикации: {{ currentDateFormat(video.publishedAt) }}
+				</div>
 				<span class="description" :class="{ hide: hide }">
 					{{ video.description }}
 				</span>
@@ -45,6 +48,9 @@
 		methods: {
 			showAll() {
 				this.hide = !this.hide;
+			},
+			currentDateFormat(date) {
+				return this.$moment(date).format('DD.MM.YYYY');
 			},
 		},
 	};
@@ -85,9 +91,15 @@
 			}
 		}
 		&-description {
-			font-size: 14px;
+			.public-date {
+				font-size: 18px;
+				font-weight: bold;
+				color: rgb(209, 209, 209);
+				border-bottom: 2px solid rgb(209, 209, 209);
+			}
 
 			.description {
+				font-size: 14px;
 				display: block;
 				&.hide {
 					height: 250px;
